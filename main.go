@@ -78,7 +78,7 @@ func run(env envConfig) error {
 
 	logger := promslog.New(promslogConfig)
 
-	logger.Info("Starting opencti_exporter", "version", version.Info())
+	logger.Info("Starting "+exporterName, "version", version.Info())
 	logger.Info("Build context", "build_context", version.BuildContext())
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
