@@ -30,4 +30,3 @@ opencti_up 1
 | OpenctiToken     | OPENCTI_TOKEN     | string     |                     | OpenCTI token to use                     |
 | MetricsSubsystem | METRICS_SUBSYSTEM | string     |                     | The Prometheus subsystem for the metrics |
 | MetricsPath      | METRICS_PATH      | string     | /metrics            | The path to access the metrics           |
-

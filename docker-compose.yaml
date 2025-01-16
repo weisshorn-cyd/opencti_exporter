@@ -129,7 +129,7 @@ services:
   prometheus:
     image: prom/prometheus
     volumes:
-      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "./prometheus.yaml:/etc/prometheus/prometheus.yaml"
     ports:
       - 9090:9090
   opencti-exporter:
