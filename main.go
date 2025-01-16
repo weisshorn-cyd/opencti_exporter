@@ -59,7 +59,7 @@ func main() {
 	}
 
 	if err := run(env); err != nil {
-		slog.Default().Error("Running opencti_exporter", "error", err)
+		slog.Default().Error("Running "+exporterName, "error", err)
 		os.Exit(1)
 	}
 }
