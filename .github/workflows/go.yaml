@@ -6,8 +6,7 @@ permissions:
   contents: read
 
 jobs:
-  golangci-lint:
-    name: lint
+  run:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,6 +40,10 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
+
+      - name: Run tests
+        run: |
+          go test -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt ./... -timeout 60s
 
       - name: Build
         run: |
