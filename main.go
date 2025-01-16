@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/exporter-toolkit/web"
 	"github.com/prometheus/exporter-toolkit/web/kingpinflag"
 	"github.com/sourcegraph/conc/pool"
+	"github.com/weisshorn-cyd/gocti"
 
 	"github.com/weisshorn-cyd/opencti_exporter/collector"
 
@@ -89,10 +90,16 @@ func run(env envConfig) error {
 		WithFirstError().
 		WithCancelOnError()
 
-	oc, err := collector.NewOpenCTICollector(ctx, env.OpenctiURL, env.OpenctiToken, env.MetricsSubsystem, logger)
+	opencti, err := gocti.NewOpenCTIAPIClient(
+		env.OpenctiURL, env.OpenctiToken,
+		gocti.WithHealthCheck(),
+		gocti.WithLogLevel(env.LogLevel),
+	)
 	if err != nil {
-		return fmt.Errorf("creating OpenCTI collector: %w", err)
+		return fmt.Errorf("creating OpenCTI client: %w", err)
 	}
+
+	oc := collector.NewOpenCTICollector(ctx, opencti, env.MetricsSubsystem, logger.With("url", env.OpenctiURL))
 
 	prometheus.MustRegister(oc)
 

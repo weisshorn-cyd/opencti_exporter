@@ -22,5 +22,6 @@ go.work
 
 # Build file
 opencti_exporter
+
 # Added by goreleaser init:
 dist/

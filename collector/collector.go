@@ -29,19 +29,10 @@ type OpenCTICollector struct {
 
 func NewOpenCTICollector(
 	ctx context.Context,
-	url, token string,
+	opencti *gocti.OpenCTIAPIClient,
 	subsystem string,
 	logger *slog.Logger,
-) (*OpenCTICollector, error) {
-	opencti, err := gocti.NewOpenCTIAPIClient(
-		url, token,
-		gocti.WithHealthCheck(),
-		gocti.WithLogLevel(slog.LevelDebug),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("creating OpenCTI client: %w", err)
-	}
-
+) *OpenCTICollector {
 	return &OpenCTICollector{
 		ctx:     ctx,
 		opencti: opencti,
@@ -57,8 +48,8 @@ func NewOpenCTICollector(
 			prometheus.BuildFQName(namespace, subsystem, "last_update"),
 			"Timestamp of the last update in OpenCTI by entity type.", []string{"entity_type"}, nil,
 		),
-		logger: logger.With("url", url),
-	}, nil
+		logger: logger,
+	}
 }
 
 // scrape collects metrics from OpenCTI and return an up metric value.

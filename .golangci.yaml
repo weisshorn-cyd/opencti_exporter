@@ -60,9 +60,9 @@ linters:
 
 issues:
   exclude-rules:
-    - source: "^func Test"
+    - path: "_test.go$"
       linters:
-        - funlen
+        - lll # Because of the mocked HTTP reponses
     - source: "`.*`"
       linters:
       - lll # Because of the struct tags

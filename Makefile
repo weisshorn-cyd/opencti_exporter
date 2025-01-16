@@ -10,7 +10,7 @@ include $(ENV)
 OPENCTI_TOKEN ?= $(OPENCTI_ADMIN_TOKEN)
 OPENCTI_URL ?= $(OPENCTI_BASE_URL)
 
-COMPOSE_FILE := ./docker-compose.yml
+COMPOSE_FILE := ./docker-compose.yaml
 COMPOSE_ENV_FILE := ./docker-compose.env
 
 all: fmt lint

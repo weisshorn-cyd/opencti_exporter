@@ -136,6 +136,7 @@ services:
     image: ghcr.io/weisshorn-cyd/opencti-exporter:latest
     environment:
       - PORT=10031
+      - LOG_LEVEL=debug
       - OPENCTI_URL=http://opencti:8080
       - OPENCTI_TOKEN=${OPENCTI_ADMIN_TOKEN}
     ports:
