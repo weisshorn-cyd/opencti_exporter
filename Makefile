@@ -36,7 +36,7 @@ lint:
 test:
 	export OPENCTI_URL=$(OPENCTI_URL) && \
 	export OPENCTI_TOKEN=$(OPENCTI_TOKEN) && \
-	go test -failfast -race ./... -timeout 120s
+	go test -failfast -race ./... -timeout 60s
 
 .PHONY: start-setup
 start-setup:
