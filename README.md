@@ -1,4 +1,4 @@
-# OpenCTI exporter
+# OpenCTI Exporter
 
 A Prometheus exporter for OpenCTI.
 
