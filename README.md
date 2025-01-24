@@ -9,12 +9,12 @@ This exporter uses [gocti](https://github.com/weisshorn-cyd/gocti) to retrieve s
 The exporter check whether the OpenCTI instance is reachable, and retrieves the timestamps of the last created and updated observables. The goal is to identify a possible ingestion issue if there has not been a creation or update of observables for some time. If any issue occurs fetching the last created or updated observable, the metric `opencti_up` will be 0 even if OpenCTI health check is successful.
 
 ```
-# HELP opencti_last_create Timestamp of the last create in OpenCTI by entity type.
-# TYPE opencti_last_create gauge
-opencti_last_create{entity_type="Hostname"} 1.73693012e+09
-# HELP opencti_last_update Timestamp of the last update in OpenCTI by entity type.
-# TYPE opencti_last_update gauge
-opencti_last_update{entity_type="StixFile"} 1.736930175e+09
+# HELP opencti_last_created_timestamp_seconds Timestamp of the last creation in OpenCTI by entity type.
+# TYPE opencti_last_created_timestamp_seconds gauge
+opencti_last_created_timestamp_seconds{entity_type="Hostname"} 1.73693012e+09
+# HELP opencti_last_updated_timestamp_seconds Timestamp of the last update in OpenCTI by entity type.
+# TYPE opencti_last_updated_timestamp_seconds gauge
+opencti_last_updated_timestamp_seconds{entity_type="StixFile"} 1.736930175e+09
 # HELP opencti_up Wether OpenCTI is up.
 # TYPE opencti_up gauge
 opencti_up 1

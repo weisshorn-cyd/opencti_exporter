@@ -101,12 +101,12 @@ func TestOpenCTICollector_Collect(t *testing.T) {
 				},
 			},
 			expected: `
-			# HELP opencti_last_create Timestamp of the last create in OpenCTI by entity type.
-			# TYPE opencti_last_create gauge
-			opencti_last_create{entity_type="Email-Addr"} 1.737042355e+09
-			# HELP opencti_last_update Timestamp of the last update in OpenCTI by entity type.
-			# TYPE opencti_last_update gauge
-			opencti_last_update{entity_type="Hostname"} 1.737042423e+09
+			# HELP opencti_last_created_timestamp_seconds Timestamp of the last creation in OpenCTI by entity type.
+			# TYPE opencti_last_created_timestamp_seconds gauge
+			opencti_last_created_timestamp_seconds{entity_type="Email-Addr"} 1.737042355e+09
+			# HELP opencti_last_updated_timestamp_seconds Timestamp of the last update in OpenCTI by entity type.
+			# TYPE opencti_last_updated_timestamp_seconds gauge
+			opencti_last_updated_timestamp_seconds{entity_type="Hostname"} 1.737042423e+09
 			# HELP opencti_up Wether OpenCTI is up.
 			# TYPE opencti_up gauge
 			opencti_up 1
@@ -129,7 +129,7 @@ func TestOpenCTICollector_Collect(t *testing.T) {
 
 			oc := collector.NewOpenCTICollector(context.Background(), opencti, "", slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
-			err = testutil.CollectAndCompare(oc, strings.NewReader(test.expected), "opencti_up", "opencti_last_create", "opencti_last_update")
+			err = testutil.CollectAndCompare(oc, strings.NewReader(test.expected), "opencti_up", "opencti_last_created_timestamp_seconds", "opencti_last_updated_timestamp_seconds")
 			require.NoError(t, err)
 		})
 	}

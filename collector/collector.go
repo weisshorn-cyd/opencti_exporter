@@ -19,12 +19,12 @@ var _ prometheus.Collector = (*OpenCTICollector)(nil)
 
 //nolint:containedctx // Needed to share the context.
 type OpenCTICollector struct {
-	ctx        context.Context
-	opencti    *gocti.OpenCTIAPIClient
-	up         *prometheus.Desc
-	lastCreate *prometheus.Desc
-	lastUpdate *prometheus.Desc
-	logger     *slog.Logger
+	ctx                  context.Context
+	opencti              *gocti.OpenCTIAPIClient
+	up                   *prometheus.Desc
+	lastCreatedTimestamp *prometheus.Desc
+	lastUpdatedTimestamp *prometheus.Desc
+	logger               *slog.Logger
 }
 
 func NewOpenCTICollector(
@@ -40,12 +40,12 @@ func NewOpenCTICollector(
 			prometheus.BuildFQName(namespace, subsystem, "up"),
 			"Wether OpenCTI is up.", nil, nil,
 		),
-		lastCreate: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "last_create"),
-			"Timestamp of the last create in OpenCTI by entity type.", []string{"entity_type"}, nil,
+		lastCreatedTimestamp: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "last_created_timestamp_seconds"),
+			"Timestamp of the last creation in OpenCTI by entity type.", []string{"entity_type"}, nil,
 		),
-		lastUpdate: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "last_update"),
+		lastUpdatedTimestamp: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "last_updated_timestamp_seconds"),
 			"Timestamp of the last update in OpenCTI by entity type.", []string{"entity_type"}, nil,
 		),
 		logger: logger,
@@ -102,13 +102,13 @@ func (c *OpenCTICollector) scrape(ch chan<- prometheus.Metric) float64 {
 	c.logger.DebugContext(c.ctx, "Last StixCyberObservable updated", "object", fmt.Sprintf("%+v", observablesUpdated[0]))
 
 	ch <- prometheus.MustNewConstMetric(
-		c.lastCreate,
+		c.lastCreatedTimestamp,
 		prometheus.GaugeValue,
 		float64(observablesCreated[0].UpdatedAt.Unix()),
 		observablesCreated[0].EntityType,
 	)
 	ch <- prometheus.MustNewConstMetric(
-		c.lastUpdate,
+		c.lastUpdatedTimestamp,
 		prometheus.GaugeValue,
 		float64(observablesUpdated[0].UpdatedAt.Unix()),
 		observablesUpdated[0].EntityType,
@@ -126,6 +126,6 @@ func (c *OpenCTICollector) Collect(ch chan<- prometheus.Metric) {
 // Describe implements Prometheus.Collector.
 func (c *OpenCTICollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.up
-	ch <- c.lastCreate
-	ch <- c.lastUpdate
+	ch <- c.lastCreatedTimestamp
+	ch <- c.lastUpdatedTimestamp
 }
