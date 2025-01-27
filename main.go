@@ -92,7 +92,6 @@ func run(env envConfig) error {
 
 	opencti, err := gocti.NewOpenCTIAPIClient(
 		env.OpenctiURL, env.OpenctiToken,
-		gocti.WithHealthCheck(),
 		gocti.WithLogLevel(env.LogLevel),
 	)
 	if err != nil {
