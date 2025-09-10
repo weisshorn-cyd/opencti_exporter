@@ -48,7 +48,7 @@ dockers:
   - use: buildx
     dockerfile: Dockerfile
     goos: linux
-    goarch: arm64
+    goarch: amd64
     ids:
       - opencti_exporter
     image_templates:
@@ -62,7 +62,7 @@ dockers:
       - "--platform=linux/arm64"
 
 archives:
-  - format: tar.gz
+  - formats: [ 'tar.gz' ]
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
