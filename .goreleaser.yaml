@@ -19,7 +19,12 @@ builds:
   - env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X github.com/weisshorn-cyd/opencti_exporter/version.Version={{.Version}}
+      - -s -w
+      - -X github.com/prometheus/common/version.Version={{.Version}}
+      - -X github.com/prometheus/common/version.Revision={{.FullCommit}}{{if eq .IsGitDirty true}}+CHANGES{{else}}{{end}}
+      - -X github.com/prometheus/common/version.Branch={{.Branch}}
+      - -X github.com/prometheus/common/version.BuildDate={{.Date}}
+      - -X github.com/prometheus/common/version.BuildUser=goreleaser
     goos:
       - linux
       - darwin
@@ -28,38 +33,18 @@ builds:
       - arm64
     mod_timestamp: "{{ .CommitTimestamp }}"
 
-dockers:
-  - use: buildx
-    dockerfile: Dockerfile
-    goos: linux
-    goarch: amd64
-    ids:
-      - opencti_exporter
-    image_templates:
-      - "ghcr.io/weisshorn-cyd/opencti-exporter:latest"
-      - "ghcr.io/weisshorn-cyd/opencti-exporter:{{ .Tag }}"
-    build_flag_templates:
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--platform=linux/amd64"
-
-  - use: buildx
-    dockerfile: Dockerfile
-    goos: linux
-    goarch: amd64
-    ids:
-      - opencti_exporter
-    image_templates:
-      - "ghcr.io/weisshorn-cyd/opencti-exporter:latest"
-      - "ghcr.io/weisshorn-cyd/opencti-exporter:{{ .Tag }}"
-    build_flag_templates:
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Version}}"
-      - "--platform=linux/arm64"
+dockers_v2:
+  - images:
+      - "ghcr.io/weisshorn-cyd/opencti-exporter"
+    tags:
+      - "latest"
+      - "{{ .Tag }}"
+    labels:
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.title": "{{.ProjectName}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.source": "{{.GitURL}}"
 
 archives:
   - formats: [ 'tar.gz' ]

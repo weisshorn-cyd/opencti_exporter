@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update to go 1.25.1 and dependencies
 - Migrate golangci-lint configuration to v2
+- Update goreleaser configuration
 
 ## [v0.3.0] - 2025-01-27
 
