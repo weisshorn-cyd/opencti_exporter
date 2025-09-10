@@ -54,6 +54,7 @@ func init() {
 
 func main() {
 	var env envConfig
+
 	if err := envconfig.Process("", &env); err != nil {
 		slog.Default().Error("Processing env var", "error", err)
 		os.Exit(1)
@@ -65,7 +66,7 @@ func main() {
 	}
 }
 
-func run(env envConfig) error {
+func run(env envConfig) error { //nolint: funlen // Hard to reduce the len of the initializations.
 	promslogConfig := &promslog.Config{}
 	toolkitFlags := kingpinflag.AddFlags(kingpin.CommandLine, ":"+env.Port)
 	flag.AddFlags(kingpin.CommandLine, promslogConfig)

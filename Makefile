@@ -13,40 +13,36 @@ OPENCTI_URL ?= $(OPENCTI_BASE_URL)
 COMPOSE_FILE := ./docker-compose.yaml
 COMPOSE_ENV_FILE := ./docker-compose.env
 
+.PHONY: all build package fmt lint test vulncheck start-setup stop-setup clean
+
 all: fmt lint
 
-.PHONY: build
 build:
 	go build .
 
-.PHONY: package
 package:
 	goreleaser release --snapshot --clean
 
-.PHONY: fmt
 fmt:
 	gofumpt -l -w .
-	wsl --fix ./...
 
-.PHONY: lint
-lint:
-	golangci-lint run --fix
+lint: clean
+	golangci-lint run -c .golangci.yaml --fix ./...
 
-.PHONY: test
+vulncheck:
+	govulncheck -test ./...
+
 test:
 	export OPENCTI_URL=$(OPENCTI_URL) && \
 	export OPENCTI_TOKEN=$(OPENCTI_TOKEN) && \
 	go test -failfast -race ./... -timeout 60s
 
-.PHONY: start-setup
 start-setup:
 	sudo docker compose --file $(COMPOSE_FILE) --env-file $(COMPOSE_ENV_FILE) up -d
 
-.PHONY: stop-setup
 stop-setup:
 	sudo docker compose --file $(COMPOSE_FILE) --env-file $(COMPOSE_ENV_FILE) down
 
-.PHONY: clean
 clean:
 	go clean -cache -testcache -modcache
 	rm -f opencti_exporter

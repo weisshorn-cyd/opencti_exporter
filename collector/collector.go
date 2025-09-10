@@ -52,6 +52,21 @@ func NewOpenCTICollector(
 	}
 }
 
+// Collect implements prometheus.Collector.
+func (c *OpenCTICollector) Collect(ch chan<- prometheus.Metric) {
+	up := c.scrape(ch)
+	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, up)
+}
+
+// Describe implements Prometheus.Collector.
+func (c *OpenCTICollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- c.up
+
+	ch <- c.lastCreatedTimestamp
+
+	ch <- c.lastUpdatedTimestamp
+}
+
 // scrape collects metrics from OpenCTI and return an up metric value.
 func (c *OpenCTICollector) scrape(ch chan<- prometheus.Metric) float64 {
 	if err := c.opencti.HealthCheck(c.ctx); err != nil {
@@ -107,6 +122,7 @@ func (c *OpenCTICollector) scrape(ch chan<- prometheus.Metric) float64 {
 		float64(observablesCreated[0].UpdatedAt.Unix()),
 		observablesCreated[0].EntityType,
 	)
+
 	ch <- prometheus.MustNewConstMetric(
 		c.lastUpdatedTimestamp,
 		prometheus.GaugeValue,
@@ -115,17 +131,4 @@ func (c *OpenCTICollector) scrape(ch chan<- prometheus.Metric) float64 {
 	)
 
 	return 1.0
-}
-
-// Collect implements prometheus.Collector.
-func (c *OpenCTICollector) Collect(ch chan<- prometheus.Metric) {
-	up := c.scrape(ch)
-	ch <- prometheus.MustNewConstMetric(c.up, prometheus.GaugeValue, up)
-}
-
-// Describe implements Prometheus.Collector.
-func (c *OpenCTICollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- c.up
-	ch <- c.lastCreatedTimestamp
-	ch <- c.lastUpdatedTimestamp
 }

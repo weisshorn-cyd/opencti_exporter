@@ -1,69 +1,66 @@
+version: "2"
 run:
   modules-download-mode: readonly
-  timeout: 2m
-
+  issues-exit-code: 1
 output:
   formats:
-  - format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
-  sort-results: true
-
-linters-settings:
-  nolintlint:
-    require-explanation: true
-    require-specific: true
-  gci:
-    skip-generated: true
-    sections:
-      - standard
-      - default
-      - prefix(github.com/weisshorn-cyd/opencti_exporter)
-      - blank
-      - dot
-  varnamelen:
-    ignore-type-assert-ok: true
-    ignore-map-index-ok: true
-    ignore-names:
-      - ch
-      - id
-      - i # Iterator
-  funlen:
-    lines: 99
-    statements: 60
-    ignore-comments: true
-  cyclop:
-    max-complexity: 12
-    skip-tests: true
-  ireturn:
-    allow:
-      - anon
-      - error
-      - empty
-      - stdlib
-      - generic
-  tagalign:
-    sort: false
-  paralleltest:
-    ignore-missing: true
-  gocognit:
-    min-complexity: 50
-
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
 linters:
-  enable-all: true
-
+  default: all
   disable:
     - depguard
     - exhaustruct
-    - exportloopref # Deprecated
     - gochecknoinits
-
-issues:
-  exclude-rules:
-    - path: "_test.go$"
-      linters:
-        - lll # Because of the mocked HTTP reponses
-    - source: "`.*`"
-      linters:
-      - lll # Because of the struct tags
-  exclude-generated: disable
+    - noinlineerr
+    - wsl
+  settings:
+    tagalign:
+      sort: false
+    varnamelen:
+      ignore-names:
+        - ch
+        - id
+        - i
+      ignore-type-assert-ok: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - funlen
+          - lll # Because of the mocked HTTP responses
+        path: _test\.go
+      - linters:
+          - lll # Because of the struct tags
+        source: '`.*`'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/weisshorn-cyd/opencti_exporter)
+        - blank
+        - dot
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
