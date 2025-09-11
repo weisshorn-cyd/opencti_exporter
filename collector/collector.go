@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	namespace = "opencti"
+	namespace        = "opencti"
+	customProperties = "id entity_type observable_value created_at updated_at"
 )
 
 // Verify if the OpenCTICollector implements prometheus.Collector.
@@ -77,7 +78,7 @@ func (c *OpenCTICollector) scrape(ch chan<- prometheus.Metric) float64 {
 
 	c.logger.DebugContext(c.ctx, "Health check successful")
 	// Retrieve last created observable.
-	observablesCreated, err := c.opencti.ListStixCyberObservables(c.ctx, "", false, nil,
+	observablesCreated, err := c.opencti.ListStixCyberObservables(c.ctx, customProperties, false, nil,
 		list.WithFirst(1),
 		list.WithOrderBy("created_at"),
 		list.WithOrderMode(list.OrderModeDesc),
@@ -97,7 +98,7 @@ func (c *OpenCTICollector) scrape(ch chan<- prometheus.Metric) float64 {
 	c.logger.DebugContext(c.ctx, "Last StixCyberObservable created", "object", fmt.Sprintf("%+v", observablesCreated[0]))
 
 	// Retrieve last updated observable.
-	observablesUpdated, err := c.opencti.ListStixCyberObservables(c.ctx, "", false, nil,
+	observablesUpdated, err := c.opencti.ListStixCyberObservables(c.ctx, customProperties, false, nil,
 		list.WithFirst(1),
 		list.WithOrderBy("updated_at"),
 		list.WithOrderMode(list.OrderModeDesc),
