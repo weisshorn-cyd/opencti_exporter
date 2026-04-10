@@ -2,7 +2,7 @@
 
 services:
   redis:
-    image: redis:8.2.1
+    image: redis:8.6.1
     restart: always
     volumes:
       - redisdata:/data
@@ -12,7 +12,7 @@ services:
       timeout: 5s
       retries: 3
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.12
     volumes:
       - esdata:/usr/share/elasticsearch/data
     environment:
@@ -31,12 +31,12 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: curl -s http://elasticsearch:9200 >/dev/null || exit 1
+      test: ["CMD-SHELL", "curl -s http://elasticsearch:9200/_cluster/health?wait_for_status=yellow >/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 50
   minio:
-    image: minio/minio:RELEASE.2025-06-13T11-33-47Z
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     volumes:
       - s3data:/data
     ports:
@@ -52,7 +52,7 @@ services:
       timeout: 5s
       retries: 3
   rabbitmq:
-    image: rabbitmq:4.1-management
+    image: rabbitmq:4.2-management
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
@@ -66,7 +66,7 @@ services:
       timeout: 30s
       retries: 3
   opencti:
-    image: opencti/platform:6.7.19
+    image: opencti/platform:7.260409.0
     environment:
       - NODE_OPTIONS=--max-old-space-size=8096
       - APP__PORT=8080
@@ -74,7 +74,7 @@ services:
       - APP__ADMIN__EMAIL=${OPENCTI_ADMIN_EMAIL}
       - APP__ADMIN__PASSWORD=${OPENCTI_ADMIN_PASSWORD}
       - APP__ADMIN__TOKEN=${OPENCTI_ADMIN_TOKEN}
-      - APP__APP_LOGS__LOGS_LEVEL=error
+      - APP__ENCRYPTION_KEY=${OPENCTI_ENCRYPTION_KEY}
       - REDIS__HOSTNAME=redis
       - REDIS__PORT=6379
       - ELASTICSEARCH__URL=http://elasticsearch:9200
@@ -114,11 +114,10 @@ services:
       timeout: 5s
       retries: 20
   worker:
-    image: opencti/worker:6.7.19
+    image: opencti/worker:7.260409.0
     environment:
       - OPENCTI_URL=http://opencti:8080
       - OPENCTI_TOKEN=${OPENCTI_ADMIN_TOKEN}
-      - WORKER_LOG_LEVEL=info
     depends_on:
       opencti:
         condition: service_healthy
