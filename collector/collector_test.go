@@ -360,7 +360,7 @@ func TestOpenCTICollector_Collect(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			openctiClient, err := gocti.NewOpenCTIAPIClient(
+			opencti, err := gocti.NewOpenCTIAPIClient(
 				"https://opencti:8080", "testtoken",
 				gocti.WithLogger(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))),
 				gocti.WithTransport(test.transport),
@@ -370,7 +370,7 @@ func TestOpenCTICollector_Collect(t *testing.T) {
 			}
 
 			coll, err := collector.NewOpenCTICollector(
-				context.Background(), openctiClient, "",
+				context.Background(), opencti, "",
 				test.entityTypes,
 				test.creatorNames,
 				slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})),

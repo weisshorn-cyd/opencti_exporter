@@ -180,6 +180,8 @@ func run(env envConfig) error { //nolint: funlen // Hard to reduce the len of th
 // splitCSV split the given comma separated string.
 //
 // If the string is empty, return an empty list.
+// This is done to avoid having multiple empty entries (`""`) in the list
+// since NewOpenCTICollector prepends an empty entry afterwards.
 func splitCSV(s string) []string {
 	if s == "" {
 		return []string{}

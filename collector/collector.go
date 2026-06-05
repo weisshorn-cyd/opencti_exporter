@@ -57,7 +57,7 @@ func NewOpenCTICollector(
 		logger.DebugContext(ctx, "Creators resolved", "count", len(creators))
 	}
 
-	// Add empty entity type and creator to always scrape global last created / updated timestamp.
+	// Add empty entity type and creator to always collect global last created / updated timestamp.
 	entityTypes = append([]string{""}, entityTypes...)
 	creators = append([]creator{{id: "", name: ""}}, creators...)
 
@@ -84,6 +84,7 @@ func NewOpenCTICollector(
 	}, nil
 }
 
+// resolveCreators queries OpenCTI users to match them with the creators.
 func resolveCreators(
 	ctx context.Context,
 	opencti *gocti.OpenCTIAPIClient,
