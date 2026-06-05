@@ -12,8 +12,14 @@ import (
 
 const (
 	namespace        = "opencti"
-	customProperties = "id entity_type observable_value created_at updated_at"
+	customProperties = "id entity_type observable_value created_at updated_at creators { id name }"
+	userProperties   = "id name"
 )
+
+type creator struct {
+	id   string
+	name string
+}
 
 // Verify if the OpenCTICollector implements prometheus.Collector.
 var _ prometheus.Collector = (*OpenCTICollector)(nil)
@@ -22,6 +28,8 @@ var _ prometheus.Collector = (*OpenCTICollector)(nil)
 type OpenCTICollector struct {
 	ctx                  context.Context
 	opencti              *gocti.OpenCTIAPIClient
+	entityTypes          []string
+	creators             []creator
 	up                   *prometheus.Desc
 	lastCreatedTimestamp *prometheus.Desc
 	lastUpdatedTimestamp *prometheus.Desc
@@ -32,25 +40,79 @@ func NewOpenCTICollector(
 	ctx context.Context,
 	opencti *gocti.OpenCTIAPIClient,
 	subsystem string,
+	entityTypes []string,
+	creatorNames []string,
 	logger *slog.Logger,
-) *OpenCTICollector {
+) (*OpenCTICollector, error) {
+	var creators []creator
+
+	if len(creatorNames) > 0 {
+		resolved, err := resolveCreators(ctx, opencti, creatorNames, logger)
+		if err != nil {
+			return nil, fmt.Errorf("resolving creators: %w", err)
+		}
+
+		creators = resolved
+
+		logger.DebugContext(ctx, "Creators resolved", "count", len(creators))
+	}
+
+	// Add empty entity type and creator to always collect global last created / updated timestamp.
+	entityTypes = append([]string{""}, entityTypes...)
+	creators = append([]creator{{id: "", name: ""}}, creators...)
+
+	logger.InfoContext(ctx, "Collector initialized", "entitiy_types", entityTypes, "creators", creators)
+
 	return &OpenCTICollector{
-		ctx:     ctx,
-		opencti: opencti,
+		ctx:         ctx,
+		opencti:     opencti,
+		entityTypes: entityTypes,
+		creators:    creators,
 		up: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "up"),
 			"Wether OpenCTI is up.", nil, nil,
 		),
 		lastCreatedTimestamp: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "last_created_timestamp_seconds"),
-			"Timestamp of the last creation in OpenCTI by entity type.", []string{"entity_type"}, nil,
+			"Timestamp of the last creation in OpenCTI by entity type and creator.", []string{"entity_type", "creator"}, nil,
 		),
 		lastUpdatedTimestamp: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "last_updated_timestamp_seconds"),
-			"Timestamp of the last update in OpenCTI by entity type.", []string{"entity_type"}, nil,
+			"Timestamp of the last update in OpenCTI by entity type and creator.", []string{"entity_type", "creator"}, nil,
 		),
 		logger: logger,
+	}, nil
+}
+
+// resolveCreators queries OpenCTI users to match them with the creators.
+func resolveCreators(
+	ctx context.Context,
+	opencti *gocti.OpenCTIAPIClient,
+	creatorNames []string,
+	logger *slog.Logger,
+) ([]creator, error) {
+	users, err := opencti.ListUsers(ctx, userProperties, true, nil)
+	if err != nil {
+		return nil, fmt.Errorf("listing users: %w", err)
 	}
+
+	logger.DebugContext(ctx, "Retrieved users from OpenCTI", "count", len(users))
+
+	nameSet := make(map[string]struct{}, len(creatorNames))
+
+	for _, name := range creatorNames {
+		nameSet[name] = struct{}{}
+	}
+
+	result := make([]creator, 0, len(creatorNames))
+
+	for _, user := range users {
+		if _, ok := nameSet[user.Name]; ok {
+			result = append(result, creator{id: user.ID, name: user.Name})
+		}
+	}
+
+	return result, nil
 }
 
 // Collect implements prometheus.Collector.
@@ -77,59 +139,92 @@ func (c *OpenCTICollector) scrape(ch chan<- prometheus.Metric) float64 {
 	}
 
 	c.logger.DebugContext(c.ctx, "Health check successful")
-	// Retrieve last created observable.
-	observablesCreated, err := c.opencti.ListStixCyberObservables(c.ctx, customProperties, false, nil,
-		list.WithFirst(1),
-		list.WithOrderBy("created_at"),
-		list.WithOrderMode(list.OrderModeDesc),
-	)
-	if err != nil {
-		c.logger.ErrorContext(c.ctx, "Retrieving last created StixCyberObservables", "error", err)
 
-		return 0.0
+	for _, entityType := range c.entityTypes {
+		for _, cr := range c.creators {
+			c.collectTimestamp(ch, entityType, cr.id, cr.name, "created_at", c.lastCreatedTimestamp)
+			c.collectTimestamp(ch, entityType, cr.id, cr.name, "updated_at", c.lastUpdatedTimestamp)
+		}
 	}
-
-	if len(observablesCreated) == 0 {
-		c.logger.ErrorContext(c.ctx, "No last created StixCyberObservable retrieved")
-
-		return 0.0
-	}
-
-	c.logger.DebugContext(c.ctx, "Last StixCyberObservable created", "object", fmt.Sprintf("%+v", observablesCreated[0]))
-
-	// Retrieve last updated observable.
-	observablesUpdated, err := c.opencti.ListStixCyberObservables(c.ctx, customProperties, false, nil,
-		list.WithFirst(1),
-		list.WithOrderBy("updated_at"),
-		list.WithOrderMode(list.OrderModeDesc),
-	)
-	if err != nil {
-		c.logger.ErrorContext(c.ctx, "Retrieving last updated StixCyberObservables", "error", err)
-
-		return 0.0
-	}
-
-	if len(observablesUpdated) == 0 {
-		c.logger.ErrorContext(c.ctx, "No last updated StixCyberObservable retrieved")
-
-		return 0.0
-	}
-
-	c.logger.DebugContext(c.ctx, "Last StixCyberObservable updated", "object", fmt.Sprintf("%+v", observablesUpdated[0]))
-
-	ch <- prometheus.MustNewConstMetric(
-		c.lastCreatedTimestamp,
-		prometheus.GaugeValue,
-		float64(observablesCreated[0].UpdatedAt.Unix()),
-		observablesCreated[0].EntityType,
-	)
-
-	ch <- prometheus.MustNewConstMetric(
-		c.lastUpdatedTimestamp,
-		prometheus.GaugeValue,
-		float64(observablesUpdated[0].UpdatedAt.Unix()),
-		observablesUpdated[0].EntityType,
-	)
 
 	return 1.0
+}
+
+func (c *OpenCTICollector) buildListOptions(entityType, creatorID, creatorName string) []list.Option {
+	opts := []list.Option{
+		list.WithFirst(1),
+	}
+
+	if entityType != "" {
+		c.logger.DebugContext(c.ctx, "Filtering by entity type", "type", entityType)
+		opts = append(opts, list.WithTypes([]string{entityType}))
+	}
+
+	if creatorID+creatorName != "" {
+		c.logger.DebugContext(c.ctx, "Filtering by creator", "id", creatorID, "name", creatorName)
+
+		creatorFilter := list.FilterGroup{
+			Mode: list.FilterModeAnd,
+			Filters: []list.Filter{
+				{
+					Key:      []string{"creator_id"},
+					Values:   []any{creatorID},
+					Operator: list.FilterOperatorEq,
+					Mode:     list.FilterModeAnd,
+				},
+			},
+		}
+
+		opts = append(opts, list.WithFilters(creatorFilter))
+	}
+
+	return opts
+}
+
+func (c *OpenCTICollector) collectTimestamp(
+	ch chan<- prometheus.Metric,
+	entityType string,
+	creatorID, creatorName string,
+	orderBy string,
+	desc *prometheus.Desc,
+) {
+	opts := c.buildListOptions(entityType, creatorID, creatorName)
+	opts = append(opts, list.WithOrderBy(orderBy), list.WithOrderMode(list.OrderModeDesc))
+
+	observables, err := c.opencti.ListStixCyberObservables(
+		c.ctx, customProperties, false, nil, opts...,
+	)
+	if err != nil {
+		c.logger.ErrorContext(c.ctx, fmt.Sprintf("Retrieving last %s StixCyberObservables", orderBy),
+			"entity_type", entityType, "creator", creatorName, "error", err)
+
+		return
+	}
+
+	if len(observables) == 0 {
+		c.logger.ErrorContext(c.ctx, fmt.Sprintf("No last %s StixCyberObservable retrieved", orderBy))
+
+		return
+	}
+
+	c.logger.DebugContext(c.ctx, fmt.Sprintf("Last %s StixCyberObservable", orderBy),
+		"entity_type", entityType, "creator", creatorName,
+		"object", fmt.Sprintf("%+v", observables[0]))
+
+	var timestamp float64
+
+	switch orderBy {
+	case "created_at":
+		timestamp = float64(observables[0].CreatedAt.Unix())
+	default:
+		timestamp = float64(observables[0].UpdatedAt.Unix())
+	}
+
+	ch <- prometheus.MustNewConstMetric(
+		desc,
+		prometheus.GaugeValue,
+		timestamp,
+		entityType,
+		creatorName,
+	)
 }

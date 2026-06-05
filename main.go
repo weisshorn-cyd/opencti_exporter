@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -46,6 +47,9 @@ type envConfig struct {
 
 	MetricsSubsystem string `envconfig:"METRICS_SUBSYSTEM" default:""         desc:"The Prometheus subsystem for the metrics"`
 	MetricsPath      string `envconfig:"METRICS_PATH"      default:"/metrics" desc:"The path to access the metrics"`
+
+	EntityTypes string `envconfig:"ENTITY_TYPES" default:"" desc:"Comma-separated list of entity types to monitor. If empty, don't filter on entity types"`
+	Creators    string `envconfig:"CREATORS"     default:"" desc:"Comma-separated list of creator names to monitor. If empty, don't filter on creators"`
 }
 
 func init() {
@@ -99,9 +103,17 @@ func run(env envConfig) error { //nolint: funlen // Hard to reduce the len of th
 		return fmt.Errorf("creating OpenCTI client: %w", err)
 	}
 
-	oc := collector.NewOpenCTICollector(ctx, opencti, env.MetricsSubsystem, logger.With("url", env.OpenctiURL))
+	coll, err := collector.NewOpenCTICollector(
+		ctx, opencti, env.MetricsSubsystem,
+		splitCSV(env.EntityTypes),
+		splitCSV(env.Creators),
+		logger.With("url", env.OpenctiURL),
+	)
+	if err != nil {
+		return fmt.Errorf("creating OpenCTI collector: %w", err)
+	}
 
-	prometheus.MustRegister(oc)
+	prometheus.MustRegister(coll)
 
 	logger.DebugContext(ctx, "OpenCTI collector initialized")
 
@@ -163,4 +175,17 @@ func run(env envConfig) error { //nolint: funlen // Hard to reduce the len of th
 	}
 
 	return nil
+}
+
+// splitCSV split the given comma separated string.
+//
+// If the string is empty, return an empty list.
+// This is done to avoid having multiple empty entries (`""`) in the list
+// since NewOpenCTICollector prepends an empty entry afterwards.
+func splitCSV(s string) []string {
+	if s == "" {
+		return []string{}
+	}
+
+	return strings.Split(s, ",")
 }
